@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mystery Reveal Game</title>
+    
+    <style>
+        :root {
+            --primary: #6c5ce7;
+            --glass: rgba(255, 255, 255, 0.1);
+            --border: rgba(255, 255, 255, 0.2);
+        }
+
+        body {
+            margin: 0;
+            background: #0f0c29;
+            background: linear-gradient(to right, #24243e, #302b63, #0f0c29);
+            font-family: 'Segoe UI', sans-serif;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container { width: 100%; max-width: 500px; text-align: center; }
+        .screen { display: none; animation: fadeIn 0.5s ease; }
+        .active { display: block; }
+
+        .glow-text { font-size: 3rem; text-shadow: 0 0 15px var(--primary); margin-bottom: 2rem; }
+
+        .btn-main, .btn-submit {
+            background: var(--primary);
+            border: none;
+            padding: 15px 40px;
+            color: white;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: 0.3s;
+            margin: 10px;
+        }
+
+        .btn-main:hover { transform: scale(1.05); box-shadow: 0 0 20px var(--primary); }
+
+        .hud { display: flex; justify-content: space-between; align-items: center; padding: 10px; }
+
+        .image-box {
+            width: 320px;
+            height: 320px;
+            margin: 20px auto;
+            /* AHAM 7AJA: Baddel el URL mte3 el taswira houni */
+            background-image: url('taswiretek.jpg');
+            background-size: cover;
+            background-position: center;
+            border-radius: 20px;
+            border: 4px solid var(--border);
+            clip-path: inset(0 100% 0 0); /* El taswira tkoun mghatya */
+            transition: 1s ease-in-out;
+        }
+
+        .challenge-card {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            margin: 20px;
+        }
+
+        input {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+            padding: 10px;
+            color: white;
+            border-radius: 8px;
+            text-align: center;
+            width: 80%;
+            margin-bottom: 10px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: #1e1e2f;
+            padding: 40px;
+            border-radius: 30px;
+            width: 80%;
+            max-width: 400px;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div id="main-menu" class="screen active">
+            <h1 class="glow-text">Mystery Game</h1>
+            <button class="btn-main" onclick="startGame()">Start Game</button><br>
+            <button class="btn-main" onclick="toggleModal('settings-modal', true)">Settings</button>
+        </div>
+
+        <div id="game-screen" class="screen">
+            <div class="hud">
+                <button onclick="location.reload()">🏠 Menu</button>
+                <div class="stage-info">Stage: <span id="stage-num">1</span>/10</div>
+                <button onclick="toggleModal('pause-overlay', true)">⏸ Pause</button>
+            </div>
+
+            <div id="image-box" class="image-box"></div>
+
+            <div class="challenge-card">
+                <h3 id="challenge-text">Question 1: 5 + 7 = ?</h3>
+                <input type="text" id="answer-input" placeholder="Ekteb houni...">
+                <button class="btn-submit" onclick="checkAnswer()">Submit</button>
+            </div>
+        </div>
+
+        <div id="settings-modal" class="modal">
+            <div class="modal-content">
+                <h2>Settings</h2>
+                <p>Volume: <input type="range" style="width:100%"></p>
+                <p>Control: Mouse/Touch</p>
+                <button class="btn-main" onclick="toggleModal('settings-modal', false)">Back</button>
+            </div>
+        </div>
+
+        <div id="pause-overlay" class="modal">
+            <div class="modal-content">
+                <h2>Game Paused</h2>
+                <button class="btn-main" onclick="toggleModal('pause-overlay', false)">Resume</button>
+                <button class="btn-main" onclick="location.reload()">Quit</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStage = 1;
+        const totalStages = 10;
+        
+        const levels = [
+            { q: "5 + 7 = ?", a: "12" },
+            { q: "3 x 3 = ?", a: "9" },
+            { q: "(1+15+30-20-15)*2", a: "22" },
+            { q: "eni Chkoun", a: "daddy" },
+            { q: "10 / 2 = ?", a: "5" },
+            { q: "chnia essmi", a: "wassim" },
+            { q: "15 - 6 = ?", a: "9" },
+            { q: "chesmek?", a: "sondos" },
+            { q: "2 x 50 = ?", a: "100" },
+            { q: "The End: 1 + 1 = ?", a: "2" }
+        ];
+
+        function startGame() {
+            document.getElementById('main-menu').classList.remove('active');
+            document.getElementById('game-screen').classList.add('active');
+            updateLevel();
+        }
+
+        function toggleModal(id, show) {
+            document.getElementById(id).style.display = show ? 'flex' : 'none';
+        }
+
+        function checkAnswer() {
+            let input = document.getElementById('answer-input').value.toLowerCase().trim();
+            let correct = levels[currentStage - 1].a;
+
+            if (input === correct) {
+                revealImage();
+            } else {
+                alert("Ghalet! Jarreb marra okhra.");
+            }
+        }
+
+        function revealImage() {
+            let revealPercent = (currentStage / totalStages) * 100;
+            document.getElementById('image-box').style.clipPath = `inset(0 ${100 - revealPercent}% 0 0)`;
+
+            if (currentStage < totalStages) {
+                currentStage++;
+                setTimeout(() => {
+                    updateLevel();
+                    document.getElementById('answer-input').value = "";
+                }, 600);
+            } else {
+                alert("Mabrouk! Kamelt el taswira lkoll!");
+            }
+        }
+
+        function updateLevel() {
+            document.getElementById('stage-num').innerText = currentStage;
+            document.getElementById('challenge-text').innerText = `Question ${currentStage}: ${levels[currentStage-1].q}`;
+        }
+    </script>
+</body>
+</html>
